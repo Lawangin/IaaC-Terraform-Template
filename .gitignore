@@ -21,6 +21,7 @@
 /infra/.terraform
 */**/.tfvars
 *.tfstate
+/infra/*tfstate
 
 # debug
 npm-debug.log*
