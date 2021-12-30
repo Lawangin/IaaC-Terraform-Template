@@ -19,6 +19,8 @@
 .DS_Store
 .env*
 /infra/.terraform
+*/**/.tfvars
+*.tfstate
 
 # debug
 npm-debug.log*
