@@ -10,14 +10,3 @@ variable "project_id" {
 variable "env" {
   default = "prod"
 }
-
-// infra/main.tf
-provider "aws" {
-  version = "~> 2.0"
-  region  = var.aws_region
-}
-
-locals {
-  # Target port to expose
-  target_port = 3000
-}

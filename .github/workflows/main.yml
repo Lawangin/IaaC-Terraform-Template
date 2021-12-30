@@ -46,6 +46,14 @@ jobs:
           container-name: nextjs-image
           image: ${{ steps.build-image.outputs.image }}
 
+      - name: Update App Spec File
+        run: |
+          sed -ie "s/<CONTAINER_NAME>/$CONTAINER_NAME/" ./appspec.json
+          sed -ie "s/<CONTAINER_PORT>/$CONTAINER_PORT/" ./appspec.json
+        env:
+          CONTAINER_NAME: nextjs-image
+          CONTAINER_PORT: 3000
+
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
@@ -53,3 +61,6 @@ jobs:
           service: web-service-node-app-prod
           cluster: web-cluster-node-app-prod
           wait-for-service-stability: true
+          codedeploy-appspec: appspec.json
+          codedeploy-application: deployment-app-node-app-prod
+          codedeploy-deployment-group: deployment-group-node-app-prod
