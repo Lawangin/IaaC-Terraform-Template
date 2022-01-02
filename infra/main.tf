@@ -1,12 +1,14 @@
 // main.tf
 provider "aws" {
-  version = "~> 2.0"
+  version = ">= 3.8"
   region  = var.aws_region
 }
 
 locals {
   # Target port to expose
   target_port = 3000
+
+  name = "nextjs"
 
   ## ECS Service config
   ecs_launch_type = "FARGATE"
@@ -215,6 +217,59 @@ resource "aws_ecs_service" "web_ecs_service" {
     module.alb.lb,
     module.ecs_tg.tg
   ]
+}
+
+# module "rds-aurora_serverless" {
+#   source  = "terraform-aws-modules/rds-aurora/aws//examples/serverless"
+#   version = "3.5.0"
+# }
+
+################################################################################
+# RDS Aurora Module - PostgreSQL
+################################################################################
+
+module "aurora_postgresql" {
+  source  = "terraform-aws-modules/rds-aurora/aws"
+  version = "6.1.3"
+ 
+  name              = "${local.name}-postgresql"
+  engine            = "aurora-postgresql"
+  engine_mode       = "serverless"
+  storage_encrypted = true
+
+  vpc_id                = module.networking.vpc_id
+  subnets               = module.networking.private_subnets[*].id
+  create_security_group = true
+  allowed_cidr_blocks   = module.networking.private_subnets[*].id
+
+  monitoring_interval = 60
+
+  apply_immediately   = true
+  skip_final_snapshot = true
+
+  db_parameter_group_name         = aws_db_parameter_group.example_postgresql.id
+  db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.example_postgresql.id
+  # enabled_cloudwatch_logs_exports = # NOT SUPPORTED
+
+  scaling_configuration = {
+    auto_pause               = true
+    min_capacity             = 2
+    max_capacity             = 16
+    seconds_until_auto_pause = 300
+    timeout_action           = "ForceApplyCapacityChange"
+  }
+}
+
+resource "aws_db_parameter_group" "example_postgresql" {
+  name        = "${local.name}-aurora-db-postgres-parameter-group"
+  family      = "aurora-postgresql10"
+  description = "${local.name}-aurora-db-postgres-parameter-group"
+}
+
+resource "aws_rds_cluster_parameter_group" "example_postgresql" {
+  name        = "${local.name}-aurora-postgres-cluster-parameter-group"
+  family      = "aurora-postgresql10"
+  description = "${local.name}-aurora-postgres-cluster-parameter-group"
 }
 
 resource "aws_cloudwatch_log_group" "ecs" {
